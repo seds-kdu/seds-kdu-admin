@@ -1,0 +1,79 @@
+# =====================================================================
+# SEDS KDU Admin - Hardened Security & Anti-PHP Execution Configuration
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. DISABLE PHP EXECUTION & CGI SCRIPT HANDLING
+# Prevent any injected or uploaded PHP files from being executed by Apache
+# ---------------------------------------------------------------------
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php5.c>
+    php_flag engine off
+</IfModule>
+
+# Strip PHP handlers for all PHP & executable file extensions
+<FilesMatch "\.(php|php[0-9]|phtml|phar|inc|pl|py|cgi|asp|aspx|sh|bash|exe)$">
+    SetHandler default-handler
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phar .inc .pl .py .cgi
+    RemoveType .php .phtml .php3 .php4 .php5 .php7 .phar .inc .pl .py .cgi
+    ForceType text/plain
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ---------------------------------------------------------------------
+# 2. PREVENT DIRECTORY BROWSING & SENSITIVE FILE ACCESS
+# ---------------------------------------------------------------------
+Options -Indexes -ExecCGI
+
+# Block access to hidden files (.git, .env, .htaccess, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to backup, log, and configuration files
+<FilesMatch "\.(bak|config|sql|log|md|sh|inc|swp|json|lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ---------------------------------------------------------------------
+# 3. HTTP METHOD RESTRICTIONS
+# Only allow safe GET, POST, HEAD methods
+# ---------------------------------------------------------------------
+<LimitExcept GET POST HEAD OPTIONS>
+    Order allow,deny
+    Deny from all
+</LimitExcept>
+
+# ---------------------------------------------------------------------
+# 4. SECURITY HEADERS (ENHANCED DEFENSE)
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ---------------------------------------------------------------------
+# 5. SPA ROUTING (REACT ROUTER FALLBACK)
+# Redirect all non-file route requests to index.html
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Do not rewrite existing files or directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Fallback to index.html for React Router single-page navigation
+    RewriteRule ^ index.html [L]
+</IfModule>
