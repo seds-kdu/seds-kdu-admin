@@ -1,6 +1,18 @@
 import { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./supabase-client";
 
+const getRedirectUrl = (path = "/") => {
+  const baseUrl = window.location.origin;
+  const bypassSecret = import.meta.env.VITE_VERCEL_BYPASS_SECRET;
+  
+  if (!bypassSecret) {
+    return `${baseUrl}${path}`;
+  }
+
+  const separator = path.includes("?") ? "&" : "?";
+  return `${baseUrl}${path}${separator}x-vercel-protection-bypass=${bypassSecret}`;
+};
+
 const authProvider: AuthProvider = {
   login: async ({ email, password, providerName }) => {
     // sign in with oauth
@@ -8,6 +20,9 @@ const authProvider: AuthProvider = {
       if (providerName) {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
           provider: providerName,
+          options: {
+            redirectTo: getRedirectUrl("/"),
+          },
         });
 
         if (error) {
@@ -64,6 +79,9 @@ const authProvider: AuthProvider = {
       const { data, error } = await supabaseClient.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: getRedirectUrl("/"),
+        },
       });
 
       if (error) {
@@ -99,7 +117,7 @@ const authProvider: AuthProvider = {
       const { data, error } = await supabaseClient.auth.resetPasswordForEmail(
         email,
         {
-          redirectTo: `${window.location.origin}/update-password`,
+          redirectTo: getRedirectUrl("/update-password"),
         }
       );
 
