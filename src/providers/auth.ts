@@ -44,10 +44,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -79,10 +79,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -115,10 +115,10 @@ const authProvider: AuthProvider = {
           success: true,
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
 
@@ -149,10 +149,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        error,
+        error: error as Error,
       };
     }
     return {
@@ -198,10 +198,10 @@ const authProvider: AuthProvider = {
           redirectTo: "/login",
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         authenticated: false,
-        error: error || {
+        error: (error as Error) || {
           message: "Check failed",
           name: "Not authenticated",
         },
@@ -215,10 +215,16 @@ const authProvider: AuthProvider = {
     };
   },
   getPermissions: async () => {
-    const user = await supabaseClient.auth.getUser();
+    const { data } = await supabaseClient.auth.getUser();
 
-    if (user) {
-      return user.data.user?.role;
+    if (data?.user) {
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      return profile?.role ?? data.user?.role ?? "viewer";
     }
 
     return null;
